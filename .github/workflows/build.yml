@@ -1,0 +1,44 @@
+name: Build and Push Godot containers
+
+on:
+  push:
+    branches: [main]
+
+env:
+  IMG_VERSION: 4.6-f43
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: android
+          - name: linux
+          - name: web
+          - name: windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push godot-linux
+        run: |
+          podman build \
+            --build-arg img_version=${{ env.IMG_VERSION }} \
+            -t ghcr.io/${{ env.OWNER }}/godot-{{ matrix.name }}:${{ env.IMG_VERSION }} \
+            -f Dockerfile."${{ matrix.name }}" .
+          
+          docker push ghcr.io/${{ env.OWNER }}/godot-${{ matrix.name }}:${{ env.IMG_VERSION }}
