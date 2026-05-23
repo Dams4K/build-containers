@@ -38,7 +38,8 @@ jobs:
         run: |
           docker build \
             --build-arg img_version=${{ env.IMG_VERSION }} \
-            -t ghcr.io/${{ env.OWNER }}/godot-{{ matrix.name }}:${{ env.IMG_VERSION }} \
-            -f Dockerfile."${{ matrix.name }}" .
+            -t ghcr.io/${{ env.OWNER }}/godot-${{ matrix.name }}:${{ env.IMG_VERSION }} \
+            -f Dockerfile.${{ matrix.name }} \
+            .
           
           docker push ghcr.io/${{ env.OWNER }}/godot-${{ matrix.name }}:${{ env.IMG_VERSION }}
