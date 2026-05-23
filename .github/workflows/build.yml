@@ -13,19 +13,11 @@ jobs:
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: android
-          - name: linux
-          - name: web
-          - name: windows
     steps:
       - uses: actions/checkout@v4
 
       - name: Set lowercase owner
-        run: echo "OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -34,12 +26,47 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push godot-linux
+      - name: Build base
+        run: |
+          docker build \
+            -t ghcr.io/${{ env.OWNER }}/godot-fedora:${{ env.IMG_VERSION }} \
+            -f Dockerfile.base \
+            .
+          docker push ghcr.io/${{ env.OWNER }}/godot-fedora:${{ env.IMG_VERSION }}
+          docker tag ghcr.io/${{ env.OWNER }}/godot-fedora:${{ env.IMG_VERSION }} godot-fedora:${{ env.IMG_VERSION }}
+
+      - name: Build linux
         run: |
           docker build \
             --build-arg img_version=${{ env.IMG_VERSION }} \
-            -t ghcr.io/${{ env.OWNER }}/godot-${{ matrix.name }}:${{ env.IMG_VERSION }} \
-            -f Dockerfile.${{ matrix.name }} \
+            -t ghcr.io/${{ env.OWNER }}/godot-linux:${{ env.IMG_VERSION }} \
+            -f Dockerfile.linux \
             .
-          
-          docker push ghcr.io/${{ env.OWNER }}/godot-${{ matrix.name }}:${{ env.IMG_VERSION }}
+          docker push ghcr.io/${{ env.OWNER }}/godot-linux:${{ env.IMG_VERSION }}
+
+      - name: Build windows
+        run: |
+          docker build \
+            --build-arg img_version=${{ env.IMG_VERSION }} \
+            -t ghcr.io/${{ env.OWNER }}/godot-windows:${{ env.IMG_VERSION }} \
+            -f Dockerfile.windows \
+            .
+          docker push ghcr.io/${{ env.OWNER }}/godot-windows:${{ env.IMG_VERSION }}
+
+      - name: Build web
+        run: |
+          docker build \
+            --build-arg img_version=${{ env.IMG_VERSION }} \
+            -t ghcr.io/${{ env.OWNER }}/godot-web:${{ env.IMG_VERSION }} \
+            -f Dockerfile.web \
+            .
+          docker push ghcr.io/${{ env.OWNER }}/godot-web:${{ env.IMG_VERSION }}
+
+      - name: Build android
+        run: |
+          docker build \
+            --build-arg img_version=${{ env.IMG_VERSION }} \
+            -t ghcr.io/${{ env.OWNER }}/godot-android:${{ env.IMG_VERSION }} \
+            -f Dockerfile.android \
+            .
+          docker push ghcr.io/${{ env.OWNER }}/godot-android:${{ env.IMG_VERSION }}
